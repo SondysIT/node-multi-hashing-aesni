@@ -8,6 +8,7 @@
 extern "C" {
     #include "cryptonight.h"
     #include "cryptonight_light.h"
+    #include "cryptonight_dark.h"
 }
 
 #define THROW_ERROR_EXCEPTION(x) Nan::ThrowError(x)
@@ -26,7 +27,7 @@ NAN_METHOD(cryptonight) {
 
     if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
-    
+
     if (info.Length() >= 2) {
         if(!info[1]->IsBoolean())
             return THROW_ERROR_EXCEPTION("Argument 2 should be a boolean");
@@ -40,7 +41,7 @@ NAN_METHOD(cryptonight) {
 
     char * input = Buffer::Data(target);
     char output[32];
-    
+
     uint32_t input_len = Buffer::Length(target);
 
     if(fast)
@@ -103,6 +104,7 @@ class CNLAsyncWorker : public Nan::AsyncWorker{
 
     void Execute () {
         cryptonight_light_hash(input, output, input_len);
+        cryptonight_dark_hash(input, output, input_len);
       }
 
     void HandleOKCallback () {
@@ -170,11 +172,45 @@ NAN_METHOD(cryptonight_light) {
     );
 }
 
+NAN_METHOD(cryptonight_dark) {
+
+    bool fast = false;
+
+    if (info.Length() < 1)
+        return THROW_ERROR_EXCEPTION("You must provide one argument.");
+
+    if (info.Length() >= 2) {
+        if(!info[1]->IsBoolean())
+            return THROW_ERROR_EXCEPTION("Argument 2 should be a boolean");
+        fast = info[1]->ToBoolean()->BooleanValue();
+    }
+
+    Local<Object> target = info[0]->ToObject();
+
+    if(!Buffer::HasInstance(target))
+        return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
+
+    char * input = Buffer::Data(target);
+    char output[32];
+
+    uint32_t input_len = Buffer::Length(target);
+
+    if(fast)
+        cryptonight_dark_fast_hash(input, output, input_len);
+    else
+        cryptonight_dark_hash(input, output, input_len);
+
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
+    info.GetReturnValue().Set(
+        returnValue
+    );
+}
 
 NAN_MODULE_INIT(init) {
     Nan::Set(target, Nan::New("cryptonight").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight)).ToLocalChecked());
     Nan::Set(target, Nan::New("CNAsync").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(CNAsync)).ToLocalChecked());
     Nan::Set(target, Nan::New("cryptonight_light").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight_light)).ToLocalChecked());
+    Nan::Set(target, Nan::New("cryptonight_dark").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight_dark)).ToLocalChecked());
     Nan::Set(target, Nan::New("CNLAsync").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(CNAsync)).ToLocalChecked());
 }
 
