@@ -12,7 +12,7 @@
 #include "crypto/hash-ops.h"
 #include <x86intrin.h>
 
-#define MEMORY         (1 << 21) /* 0.5 MiB */
+#define MEMORY         (1 << 21) /* 1 MiB */
 #define ITER           (1 << 20)
 #define AES_BLOCK_SIZE  16
 #define AES_KEY_SIZE    32 /*16*/
@@ -67,7 +67,7 @@ static inline void ExpandAESKey256_sub1(__m128i *tmp1, __m128i *tmp2)
 static inline void ExpandAESKey256_sub2(__m128i *tmp1, __m128i *tmp3)
 {
 	__m128i tmp2, tmp4;
-
+	
 	tmp4 = _mm_aeskeygenassist_si128(*tmp1, 0x00);
 	tmp2 = _mm_shuffle_epi32(tmp4, 0xAA);
 	tmp4 = _mm_slli_si128(*tmp3, 0x04);
@@ -84,75 +84,75 @@ static inline void ExpandAESKey256_sub2(__m128i *tmp1, __m128i *tmp3)
 static inline void ExpandAESKey256(char *keybuf)
 {
 	__m128i tmp1, tmp2, tmp3, *keys;
-
+	
 	keys = (__m128i *)keybuf;
-
+	
 	tmp1 = _mm_load_si128((__m128i *)keybuf);
 	tmp3 = _mm_load_si128((__m128i *)(keybuf+0x10));
-
+	
 	tmp2 = _mm_aeskeygenassist_si128(tmp3, 0x01);
 	ExpandAESKey256_sub1(&tmp1, &tmp2);
 	keys[2] = tmp1;
 	ExpandAESKey256_sub2(&tmp1, &tmp3);
 	keys[3] = tmp3;
-
+	
 	tmp2 = _mm_aeskeygenassist_si128(tmp3, 0x02);
 	ExpandAESKey256_sub1(&tmp1, &tmp2);
 	keys[4] = tmp1;
 	ExpandAESKey256_sub2(&tmp1, &tmp3);
 	keys[5] = tmp3;
-
+	
 	tmp2 = _mm_aeskeygenassist_si128(tmp3, 0x04);
 	ExpandAESKey256_sub1(&tmp1, &tmp2);
 	keys[6] = tmp1;
 	ExpandAESKey256_sub2(&tmp1, &tmp3);
 	keys[7] = tmp3;
-
+	
 	tmp2 = _mm_aeskeygenassist_si128(tmp3, 0x08);
 	ExpandAESKey256_sub1(&tmp1, &tmp2);
 	keys[8] = tmp1;
 	ExpandAESKey256_sub2(&tmp1, &tmp3);
 	keys[9] = tmp3;
-
+	
 	tmp2 = _mm_aeskeygenassist_si128(tmp3, 0x10);
 	ExpandAESKey256_sub1(&tmp1, &tmp2);
 	keys[10] = tmp1;
 	ExpandAESKey256_sub2(&tmp1, &tmp3);
 	keys[11] = tmp3;
-
+	
 	tmp2 = _mm_aeskeygenassist_si128(tmp3, 0x20);
 	ExpandAESKey256_sub1(&tmp1, &tmp2);
 	keys[12] = tmp1;
 	ExpandAESKey256_sub2(&tmp1, &tmp3);
 	keys[13] = tmp3;
-
+	
 	tmp2 = _mm_aeskeygenassist_si128(tmp3, 0x40);
 	ExpandAESKey256_sub1(&tmp1, &tmp2);
 	keys[14] = tmp1;
 }
 
-static const uint64_t keccakf_rndc[24] =
+static const uint64_t keccakf_rndc[24] = 
 {
     0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
     0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
     0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL,
     0x0000000000000088ULL, 0x0000000080008009ULL, 0x000000008000000aULL,
     0x000000008000808bULL, 0x800000000000008bULL, 0x8000000000008089ULL,
-    0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL,
+    0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL, 
     0x000000000000800aULL, 0x800000008000000aULL, 0x8000000080008081ULL,
     0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL
 };
 
-static const uint32_t keccakf_rotc[24] =
+static const uint32_t keccakf_rotc[24] = 
 {
-    1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
+    1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14, 
     27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
 };
 
-static const uint32_t keccakf_piln[24] =
+static const uint32_t keccakf_piln[24] = 
 {
-    10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
-    15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
+    10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4, 
+    15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1 
 };
 
 #define ROTL64(x, y)		(((x) << (y)) | ((x) >> (64 - (y))))
@@ -228,32 +228,32 @@ static void CNKeccakF1600(uint64_t *st)
 static void CNKeccak(uint64_t *output, uint64_t *input)
 {
 	uint64_t st[25];
-
+	
 	// Copy 72 bytes
 	for(int i = 0; i < 9; ++i) st[i] = input[i];
-
+	
 	st[9] = (input[9] & 0x00000000FFFFFFFFUL) | 0x0000000100000000UL;
-
+	
 	for(int i = 10; i < 25; ++i) st[i] = 0x00UL;
-
+	
 	// Last bit of padding
 	st[16] = 0x8000000000000000UL;
-
+	
 	CNKeccakF1600(st);
-
+	
 	memcpy(output, st, 200);
 }
 
 static inline uint64_t mul128(uint64_t a, uint64_t b, uint64_t *product_hi)
 {
 	uint64_t lo, hi;
-
+	
 	__asm__("mul %%rdx":
 	"=a" (lo), "=d" (hi):
 	"a" (a), "d" (b));
-
+	
 	*product_hi = hi;
-
+	
 	return lo;
 }
 
@@ -329,22 +329,22 @@ struct cryptonight_ctx {
 void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
     struct cryptonight_ctx *ctx = alloca(sizeof(struct cryptonight_ctx));
     uint8_t ExpandedKey[256];
-
+    
     CNKeccak(&ctx->state.hs, input);
-
+    
    memcpy(ctx->text, ctx->state.init, INIT_SIZE_BYTE);
     memcpy(ExpandedKey, ctx->state.hs.b, AES_KEY_SIZE);
     ExpandAESKey256(ExpandedKey);
-
+    
     __m128i *longoutput, *expkey, *xmminput;
 	longoutput = (__m128i *)ctx->long_state;
 	expkey = (__m128i *)ExpandedKey;
 	xmminput = (__m128i *)ctx->text;
-
+    
     //for (i = 0; likely(i < MEMORY); i += INIT_SIZE_BYTE)
     //    aesni_parallel_noxor(&ctx->long_state[i], ctx->text, ExpandedKey);
-
-    for (int i = 0; __builtin_expect(i < 0x2000, 1); ++i)
+    
+    for (int i = 0; __builtin_expect(i < 0x1000, 1); ++i)
     {
 		for(int j = 0; j < 10; j++)
 		{
@@ -366,8 +366,8 @@ void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
 		_mm_store_si128(&(longoutput[(i << 3) + 6]), xmminput[6]);
 		_mm_store_si128(&(longoutput[(i << 3) + 7]), xmminput[7]);
     }
-
-	for (int i = 0; i < 2; i++)
+	
+	for (int i = 0; i < 2; i++) 
     {
 	    ctx->a[i] = ((uint64_t *)ctx->state.k)[i] ^  ((uint64_t *)ctx->state.k)[i+4];
 	    ctx->b[i] = ((uint64_t *)ctx->state.k)[i+2] ^  ((uint64_t *)ctx->state.k)[i+6];
@@ -377,9 +377,9 @@ void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
     uint64_t a[2] __attribute((aligned(16))), b[2] __attribute((aligned(16)));
     a[0] = ctx->a[0];
     a[1] = ctx->a[1];
-
-	for(int i = 0; __builtin_expect(i < 0x40000, 1); i++)
-	{
+	
+	for(int i = 0; __builtin_expect(i < 0x80000, 1); i++)
+	{	  
 	__m128i c_x = _mm_load_si128((__m128i *)&ctx->long_state[a[0] & 0xFFFF0]);
 	__m128i a_x = _mm_load_si128((__m128i *)a);
 	uint64_t c[2];
@@ -387,7 +387,7 @@ void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
 
 	_mm_store_si128((__m128i *)c, c_x);
 	__builtin_prefetch(&ctx->long_state[c[0] & 0xFFFF0], 0, 1);
-
+	
 	b_x = _mm_xor_si128(b_x, c_x);
 	_mm_store_si128((__m128i *)&ctx->long_state[a[0] & 0xFFFF0], b_x);
 
@@ -406,7 +406,7 @@ void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
 		  : "%a" (c[0]),
 		"rm" (b[0])
 		  : "cc" );
-
+	  
 	  a[0] += hi;
 	  a[1] += lo;
 	}
@@ -423,12 +423,12 @@ void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
     memcpy(ctx->text, ctx->state.init, INIT_SIZE_BYTE);
     memcpy(ExpandedKey, &ctx->state.hs.b[32], AES_KEY_SIZE);
     ExpandAESKey256(ExpandedKey);
-
+    
     //for (i = 0; likely(i < MEMORY); i += INIT_SIZE_BYTE)
     //    aesni_parallel_xor(&ctx->text, ExpandedKey, &ctx->long_state[i]);
-
-    for (int i = 0; __builtin_expect(i < 0x2000, 1); ++i)
-	{
+    
+    for (int i = 0; __builtin_expect(i < 0x1000, 1); ++i)
+	{	
 		xmminput[0] = _mm_xor_si128(longoutput[(i << 3)], xmminput[0]);
 		xmminput[1] = _mm_xor_si128(longoutput[(i << 3) + 1], xmminput[1]);
 		xmminput[2] = _mm_xor_si128(longoutput[(i << 3) + 2], xmminput[2]);
@@ -437,7 +437,7 @@ void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
 		xmminput[5] = _mm_xor_si128(longoutput[(i << 3) + 5], xmminput[5]);
 		xmminput[6] = _mm_xor_si128(longoutput[(i << 3) + 6], xmminput[6]);
 		xmminput[7] = _mm_xor_si128(longoutput[(i << 3) + 7], xmminput[7]);
-
+		
 		for(int j = 0; j < 10; j++)
 		{
 			xmminput[0] = _mm_aesenc_si128(xmminput[0], expkey[j]);
@@ -449,9 +449,9 @@ void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
 			xmminput[6] = _mm_aesenc_si128(xmminput[6], expkey[j]);
 			xmminput[7] = _mm_aesenc_si128(xmminput[7], expkey[j]);
 		}
-
+		
 	}
-
+        
     memcpy(ctx->state.init, ctx->text, INIT_SIZE_BYTE);
 	CNKeccakF1600(&ctx->state.hs);
     extra_hashes[ctx->state.hs.b[0] & 3](&ctx->state, 200, output);
