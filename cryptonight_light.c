@@ -326,7 +326,7 @@ struct cryptonight_ctx {
     oaes_ctx* aes_ctx;
 };
 
-void cryptonight_dark_hash(const char* input, char* output, uint32_t len) {
+void cryptonight_light_hash(const char* input, char* output, uint32_t len) {
     struct cryptonight_ctx *ctx = alloca(sizeof(struct cryptonight_ctx));
     uint8_t ExpandedKey[256];
 
@@ -457,7 +457,7 @@ void cryptonight_dark_hash(const char* input, char* output, uint32_t len) {
     extra_hashes[ctx->state.hs.b[0] & 3](&ctx->state, 200, output);
 }
 
-void cryptonight_dark_fast_hash(const char* input, char* output, uint32_t len) {
+void cryptonight_light_fast_hash(const char* input, char* output, uint32_t len) {
     union hash_state state;
     hash_process(&state, (const uint8_t*) input, len);
     memcpy(output, &state, HASH_SIZE);
