@@ -12,8 +12,8 @@
 #include "crypto/hash-ops.h"
 #include <x86intrin.h>
 
-#define MEMORY         (1 << 19) /* 0.5 MiB */
-#define ITER           (1 << 19)
+#define MEMORY         (1 << 21) /* 0.5 MiB */
+#define ITER           (1 << 20)
 #define AES_BLOCK_SIZE  16
 #define AES_KEY_SIZE    32 /*16*/
 #define INIT_SIZE_BLK   8
